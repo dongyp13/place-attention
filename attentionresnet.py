@@ -97,6 +97,7 @@ class Bottleneck(nn.Module):
 class Attention(nn.Module):
     def __init__(self, inplanes, planes):
         super(Attention, self).__init__()
+        self.planes = planes
         self.query = nn.Linear(inplanes, planes, bias=False)
         self.key = nn.Linear(inplanes, planes, bias=False)
         self.value = nn.Linear(inplanes, planes, bias=False)
@@ -111,7 +112,7 @@ class Attention(nn.Module):
         v = self.value(permute_x)
 
         attn_weight = nn.functional.softmax(
-            torch.matmul(q, k.permute(0,2,1)) / math.sqrt(planes),
+            torch.matmul(q, k.permute(0,2,1)) / math.sqrt(self.planes),
             dim=2)
         content = permute_x + torch.matmul(attn_weight, v)
         content = self.fc(content)
