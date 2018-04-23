@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 import math
 import torch.utils.model_zoo as model_zoo
@@ -109,7 +110,7 @@ class Attention(nn.Module):
         k = self.key(permute_x)
         v = self.value(permute_x)
 
-        attn_weight = torch.nn.functional.softmax(
+        attn_weight = nn.functional.softmax(
             torch.matmul(q, k.permute(0,2,1)) / math.sqrt(planes),
             dim=2)
         content = permute_x + torch.matmul(attn_weight, v)
