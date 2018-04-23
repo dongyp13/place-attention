@@ -8,11 +8,11 @@ import os
 
 # th architecture to use
 arch = 'resnet18'
-model_weight = '/data/vision/torralba/deepscene/moments/models/2stream-simple/model/kinetics_rgb_resnet18_2d_single_stack1_fromscratch_best.pth.tar'
-model_name = 'resnet18_kinetics_fromscratch'
+model_weight = 'resnet18_best.pth.tar'
+model_name = 'resnet18'
 
 # create the network architecture
-model = models.__dict__[arch](num_classes=400)
+model = models.__dict__[arch](num_classes=365)
 
 #model_weight = '%s_places365.pth.tar' % arch
 
