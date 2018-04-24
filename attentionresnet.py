@@ -139,7 +139,7 @@ class ResNet(nn.Module):
         self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
         self.attention1 = Attention(512, 512)
-        self.avgpool = nn.AvgPool2d(7, stride=1)
+        #self.avgpool = nn.AvgPool2d(7, stride=1)
         self.fc = nn.Linear(512 * block.expansion, num_classes)
 
         for m in self.modules():
@@ -179,7 +179,16 @@ class ResNet(nn.Module):
         x = self.layer4(x)
 
         x = self.attention1(x)
-        x = self.avgpool(x)
+
+        x = x.resize(x.size(0), x.size(1), x.size(2)*x.size(3))
+        norm = x.norm(2, 1)
+        _, index = norm.max(1)
+        index = index.detach()
+        x = x.chunk(x.size(0), 0)
+        index = index.chunk(x.size(0), 0)
+        x = torch.cat([x[i].index_select(2, index[i]) for i in range(x.size(0))])
+        
+        #x = self.avgpool(x)
         x = x.view(x.size(0), -1)
         x = self.fc(x)
 
