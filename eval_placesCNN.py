@@ -19,6 +19,7 @@ import torchvision.datasets as datasets
 import torchvision.models as models
 
 import wideresnet
+import attentionresnet
 import pdb
 model_names = sorted(name for name in models.__dict__
     if name.islower() and not name.startswith("__")
@@ -26,8 +27,8 @@ model_names = sorted(name for name in models.__dict__
 
 
 def main():
-    model_file = 'models/whole_resnet50_places365_python36.pth.tar'
-    #model_file = 'whole_resnet50.pth.tar'
+    #model_file = 'models/whole_resnet50_places365_python36.pth.tar'
+    model_file = 'whole_attentionresnet.pth.tar'
     model = torch.load(model_file)
     model = torch.nn.DataParallel(model).cuda()
     cudnn.benchmark = True

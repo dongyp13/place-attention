@@ -1,6 +1,7 @@
 import torch
 from torch.autograd import Variable as V
 import torchvision.models as models
+import attentionresnet
 from PIL import Image
 from torchvision import transforms as trn
 from torch.nn import functional as F
@@ -8,12 +9,12 @@ import os
 
 # th architecture to use
 arch = 'resnet18'
-model_weight = 'resnet18_best.pth.tar'
-model_name = 'resnet18'
+model_weight = 'attentionresnet_best.pth.tar'
+model_name = 'attentionresnet'
 
 # create the network architecture
-model = models.__dict__[arch](num_classes=365)
-
+#model = models.__dict__[arch](num_classes=365)
+model = attentionresnet.resnet18(num_classes=365)
 #model_weight = '%s_places365.pth.tar' % arch
 
 checkpoint = torch.load(model_weight, map_location=lambda storage, loc: storage) # model trained in GPU could be deployed in CPU machine like this!
