@@ -180,16 +180,17 @@ class ResNet(nn.Module):
 
         x = self.attention1(x)
 
+        batch_size = x.size(0)
         x = x.resize(x.size(0), x.size(1), x.size(2)*x.size(3))
         norm = x.norm(2, 1)
         _, index = norm.max(1)
         index = index.detach()
-        x = x.chunk(x.size(0), 0)
-        index = index.chunk(x.size(0), 0)
-        x = torch.cat([x[i].index_select(2, index[i]) for i in range(x.size(0))])
-        
+        x = x.chunk(batch_size, 0)
+        index = index.chunk(batch_size, 0)
+        x = torch.cat([x[i].index_select(2, index[i]) for i in range(batch_size)])
+
         #x = self.avgpool(x)
-        x = x.view(x.size(0), -1)
+        x = x.view(batch_size, -1)
         x = self.fc(x)
 
         return x
