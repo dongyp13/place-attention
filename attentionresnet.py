@@ -102,7 +102,7 @@ class Attention(nn.Module):
         self.key = nn.Linear(inplanes, planes, bias=False)
         self.value = nn.Linear(inplanes, planes, bias=False)
         self.fc = nn.Linear(inplanes, planes)
-        self.bn = nn.BatchNorm2d(planes)
+        #self.bn = nn.BatchNorm2d(planes)
         self.relu = nn.ReLU(inplace=True)
 
     def forward(self, x):
@@ -118,11 +118,20 @@ class Attention(nn.Module):
         content = self.fc(content)
         content = content.permute(0,2,1).resize(x.size(0), x.size(1), x.size(2), x.size(3))
 
-        out = self.bn(content)
-        out = self.relu(out)
+        #out = self.bn(content)
+        out = self.relu(content)
 
         return out
 
+
+class AttnPool(nn.Module):
+    def __init__(self, planes):
+        super(AttnPool, self).__init__()
+        self.planes = planes
+        self.pool = nn.AvgPool2d(7, stride=1)
+
+    def forward(self, x):
+        return self.pool(x)
 
 class ResNet(nn.Module):
 
@@ -133,13 +142,13 @@ class ResNet(nn.Module):
                                bias=False)
         self.bn1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU(inplace=True)
-        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1) # previous stride is 2
+        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.layer1 = self._make_layer(block, 64, layers[0])
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
         self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
-        self.attention1 = Attention(512, 512)
-        #self.avgpool = nn.AvgPool2d(7, stride=1)
+        self.attention1 = Attention(512 * block.expansion, 512 * block.expansion)
+        self.pool = AttnPool(512 * block.expansion)
         self.fc = nn.Linear(512 * block.expansion, num_classes)
 
         for m in self.modules():
@@ -179,7 +188,7 @@ class ResNet(nn.Module):
         x = self.layer4(x)
 
         x = self.attention1(x)
-
+        '''
         batch_size = x.size(0)
         x = x.resize(x.size(0), x.size(1), x.size(2)*x.size(3))
         norm = x.norm(2, 1)
@@ -188,9 +197,9 @@ class ResNet(nn.Module):
         x = x.chunk(batch_size, 0)
         index = index.chunk(batch_size, 0)
         x = torch.cat([x[i].index_select(2, index[i]) for i in range(batch_size)])
-
-        #x = self.avgpool(x)
-        x = x.view(batch_size, -1)
+        '''
+        x = self.pool(x)
+        x = x.view(x.size(0), -1)
         x = self.fc(x)
 
         return x

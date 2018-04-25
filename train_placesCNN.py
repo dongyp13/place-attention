@@ -57,6 +57,7 @@ parser.add_argument('--pretrained', dest='pretrained', action='store_false',
                     help='use pre-trained model')
 parser.add_argument('--num_classes',default=365, type=int, help='num of class in the model')
 parser.add_argument('--dataset',default='places365',help='which dataset to train')
+parser.add_argument('--output',default='model', help='output dir')
 
 best_prec1 = 0
 
@@ -150,7 +151,7 @@ def main():
             'arch': args.arch,
             'state_dict': model.state_dict(),
             'best_prec1': best_prec1,
-        }, is_best, args.arch.lower())
+        }, is_best, args.output)
 
 
 def train(train_loader, model, criterion, optimizer, epoch):
