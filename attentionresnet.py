@@ -150,7 +150,7 @@ class ResNet(nn.Module):
         #self.attention1 = Attention(512 * block.expansion, 512 * block.expansion)
         #self.attention2 = Attention(512 * block.expansion, 512 * block.expansion)
         self.pool = AttnPool(512 * block.expansion)
-        #self.fc1 = nn.Linear(512 * block.expansion, 512 * block.expansion)
+        self.fc1 = nn.Linear(512 * block.expansion, 512 * block.expansion)
         self.fc2 = nn.Linear(512 * block.expansion, num_classes)
 
         for m in self.modules():
@@ -203,7 +203,7 @@ class ResNet(nn.Module):
         '''
         x = self.pool(x)
         x = x.view(x.size(0), -1)
-        #x = self.fc1(x)
+        x = self.fc1(x)
         x = self.fc2(x)
 
         return x
