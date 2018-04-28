@@ -127,6 +127,7 @@ class Attention(nn.Module):
 class AttnPool(nn.Module):
     def __init__(self, planes):
         super(AttnPool, self).__init__()
+        self.planes = planes
         self.pool = nn.AvgPool2d(7, stride=1)
         self.fc = nn.Linear(planes, planes)
         self.att = nn.Linear(planes, 1)
@@ -136,7 +137,9 @@ class AttnPool(nn.Module):
         avg_x = avg_x.view(avg_x.size(0), -1)
         avg_x = self.fc(avg_x)
         permute_x = x.resize(x.size(0), x.size(1), x.size(2)*x.size(3)).permute(0,2,1)
-        attn_weight = nn.functional.softmax(self.att(permute_x + avg_x.unsqueeze(1)).squeeze(), dim=1)
+        attn_weight = nn.functional.softmax(
+            self.att(permute_x + avg_x.unsqueeze(1)).squeeze() / math.sqrt(self.planes), 
+            dim=1)
         x = torch.matmul(attn_weight.unsqueeze(1), permute_x).squeeze()
         return x
 
