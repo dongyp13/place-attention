@@ -160,7 +160,7 @@ class ResNet(nn.Module):
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
         self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
-        #self.attention1 = Attention(512 * block.expansion, 512 * block.expansion)
+        self.attention1 = Attention(512 * block.expansion, 512 * block.expansion)
         #self.attention2 = Attention(512 * block.expansion, 512 * block.expansion)
         self.pool = AttnPool(512 * block.expansion)
         self.fc = nn.Linear(512 * block.expansion, num_classes)
@@ -201,7 +201,7 @@ class ResNet(nn.Module):
         x = self.layer3(x)
         x = self.layer4(x)
 
-        #x = self.attention1(x)
+        x = self.attention1(x)
         #x = self.attention2(x)
         '''
         batch_size = x.size(0)
