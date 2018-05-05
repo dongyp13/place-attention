@@ -130,15 +130,18 @@ class AttnPool(nn.Module):
         self.planes = planes
         self.pool = nn.AvgPool2d(7, stride=1)
         self.fc = nn.Linear(planes, planes)
-        self.att = nn.Linear(planes, 1)
+        self.att = nn.Linear(planes, 1, bias=False)
+        nn.init.constant(self.att.weight, 0)
+        self.relu = nn.ReLU(inplace=True)
 
     def forward(self, x):
         avg_x = self.pool(x)
         avg_x = avg_x.view(avg_x.size(0), -1)
         avg_x = self.fc(avg_x)
+        avg_x = self.relu(avg_x)
         permute_x = x.resize(x.size(0), x.size(1), x.size(2)*x.size(3)).permute(0,2,1)
         attn_weight = nn.functional.softmax(
-            self.att(permute_x + avg_x.unsqueeze(1)).squeeze() / math.sqrt(self.planes), 
+            self.att(permute_x + avg_x.unsqueeze(1)).squeeze(),
             dim=1)
         x = torch.matmul(attn_weight.unsqueeze(1), permute_x).squeeze()
         return x
