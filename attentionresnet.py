@@ -100,9 +100,9 @@ class Attention(nn.Module):
         self.planes = planes
         self.query = nn.Linear(inplanes, planes, bias=False)
         self.key = nn.Linear(inplanes, planes, bias=False)
-        self.value = nn.Linear(inplanes, planes, bias=False)
-        self.fc = nn.Linear(inplanes, planes)
-        self.bn = nn.BatchNorm2d(planes)
+        self.value = nn.Linear(inplanes, inplanes, bias=False)
+        self.fc = nn.Linear(inplanes, inplanes)
+        self.bn = nn.BatchNorm2d(inplanes)
         self.relu = nn.ReLU(inplace=True)
 
     def forward(self, x):
@@ -129,22 +129,23 @@ class AttnPool(nn.Module):
         super(AttnPool, self).__init__()
         self.planes = planes
         self.pool = nn.AvgPool2d(7, stride=1)
-        self.fc = nn.Linear(planes, planes)
-        self.att = nn.Linear(planes, 1, bias=False)
-        nn.init.constant(self.att.weight, 0)
-        self.relu = nn.ReLU(inplace=True)
+        #self.fc = nn.Linear(planes, planes)
+        #self.att = nn.Linear(planes, 1, bias=False)
+        #nn.init.constant(self.att.weight, 0)
+        #self.relu = nn.ReLU(inplace=True)
 
     def forward(self, x):
-        avg_x = self.pool(x)
-        avg_x = avg_x.view(avg_x.size(0), -1)
-        avg_x = self.fc(avg_x)
-        avg_x = self.relu(avg_x)
-        permute_x = x.resize(x.size(0), x.size(1), x.size(2)*x.size(3)).permute(0,2,1)
-        attn_weight = nn.functional.softmax(
-            self.att(permute_x + avg_x.unsqueeze(1)).squeeze(),
-            dim=1)
-        x = torch.matmul(attn_weight.unsqueeze(1), permute_x).squeeze()
-        return x
+        #avg_x = self.pool(x)
+        #avg_x = avg_x.view(avg_x.size(0), -1)
+        #avg_x = self.fc(avg_x)
+        #avg_x = self.relu(avg_x)
+        #permute_x = x.resize(x.size(0), x.size(1), x.size(2)*x.size(3)).permute(0,2,1)
+        #attn_weight = nn.functional.softmax(
+        #    self.att(permute_x + avg_x.unsqueeze(1)).squeeze(),
+        #    dim=1)
+        #x = torch.matmul(attn_weight.unsqueeze(1), permute_x).squeeze()
+        #return x
+        return self.pool(x)
 
 class ResNet(nn.Module):
 
@@ -160,7 +161,7 @@ class ResNet(nn.Module):
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
         self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
-        self.attention1 = Attention(512 * block.expansion, 512 * block.expansion)
+        self.attention1 = Attention(512 * block.expansion, 512 * block.expansion / 8)
         #self.attention2 = Attention(512 * block.expansion, 512 * block.expansion)
         self.pool = AttnPool(512 * block.expansion)
         self.fc = nn.Linear(512 * block.expansion, num_classes)
