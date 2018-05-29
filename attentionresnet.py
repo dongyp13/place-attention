@@ -101,7 +101,7 @@ class Attention(nn.Module):
         self.query = nn.Linear(inplanes, planes, bias=False)
         self.key = nn.Linear(inplanes, planes, bias=False)
         self.value = nn.Linear(inplanes, inplanes, bias=False)
-        
+
         self.fc = nn.Linear(inplanes, inplanes)
         self.bn = nn.BatchNorm2d(inplanes)
         self.relu = nn.ReLU(inplace=True)
@@ -125,11 +125,47 @@ class Attention(nn.Module):
         return out
 
 
+class BilinearAttention(nn.Module):
+    def __init__(self, inplanes, planes):
+        super(BilinearAttention, self).__init__()
+        self.planes = planes
+        self.query = nn.Linear(inplanes, planes, bias=False)
+        self.key = nn.Linear(inplanes, planes, bias=False)
+        self.value = nn.Linear(inplanes, inplanes, bias=False)
+        self.tanh = nn.Tanh()
+        self.align = nn.Linear(planes, 1, bias=False)
+        
+        self.fc = nn.Linear(inplanes, inplanes)
+        self.bn = nn.BatchNorm2d(inplanes)
+        self.relu = nn.ReLU(inplace=True)
+
+    def forward(self, x):
+        permute_x = x.resize(x.size(0), x.size(1), x.size(2)*x.size(3)).permute(0,2,1)
+        q = self.tanh(self.query(permute_x))
+        k = self.tanh(self.key(permute_x))
+        v = self.value(permute_x)
+
+        q = q.unsqueeze(2).expand(-1,-1,x.size(2)*x.size(3),-1)
+        k = k.unsqueeze(1).expand(-1,x.size(2)*x.size(3),-1,-1)
+
+        attn_weight = nn.functional.softmax(
+            self.align(q * k).squeeze(),
+            dim=2)
+        content = permute_x + torch.matmul(attn_weight, v)
+        content = self.fc(content)
+        content = content.permute(0,2,1).resize(x.size(0), x.size(1), x.size(2), x.size(3))
+
+        out = self.bn(content)
+        out = self.relu(out)
+
+        return out
+
 class AttnPool(nn.Module):
     def __init__(self, planes, kernel_size):
         super(AttnPool, self).__init__()
         self.planes = planes
-        self.att1 = Attention(planes, planes / 8)
+        #self.att1 = Attention(planes, planes / 8)
+        self.att1 = BilinearAttention(planes, planes / 8)
         self.pool = nn.AvgPool2d(kernel_size, stride=1)
         #self.fc = nn.Linear(planes, planes)
         #self.att = nn.Linear(planes, 1, bias=False)
