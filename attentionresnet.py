@@ -101,6 +101,7 @@ class Attention(nn.Module):
         self.query = nn.Linear(inplanes, planes, bias=False)
         self.key = nn.Linear(inplanes, planes, bias=False)
         self.value = nn.Linear(inplanes, inplanes, bias=False)
+        
         self.fc = nn.Linear(inplanes, inplanes)
         self.bn = nn.BatchNorm2d(inplanes)
         self.relu = nn.ReLU(inplace=True)
@@ -125,10 +126,11 @@ class Attention(nn.Module):
 
 
 class AttnPool(nn.Module):
-    def __init__(self, planes):
+    def __init__(self, planes, kernel_size):
         super(AttnPool, self).__init__()
         self.planes = planes
-        self.pool = nn.AvgPool2d(7, stride=1)
+        self.att1 = Attention(planes, planes / 8)
+        self.pool = nn.AvgPool2d(kernel_size, stride=1)
         #self.fc = nn.Linear(planes, planes)
         #self.att = nn.Linear(planes, 1, bias=False)
         #nn.init.constant(self.att.weight, 0)
@@ -145,7 +147,10 @@ class AttnPool(nn.Module):
         #    dim=1)
         #x = torch.matmul(attn_weight.unsqueeze(1), permute_x).squeeze()
         #return x
-        return self.pool(x)
+        x = self.att1(x)
+        x = self.pool(x)
+        x = x.view(x.size(0), -1)
+        return x
 
 class ResNet(nn.Module):
 
@@ -160,14 +165,10 @@ class ResNet(nn.Module):
         self.layer1 = self._make_layer(block, 64, layers[0])
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
         self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
-        self.attention1 = Attention(256 * block.expansion, 256 * block.expansion / 8)
+        #self.attention1 = Attention(256 * block.expansion, 256 * block.expansion / 8)
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
-        self.attention2 = Attention(512 * block.expansion, 512 * block.expansion / 8)
-        #self.attention2 = Attention(512 * block.expansion, 512 * block.expansion)
-        #self.pool = AttnPool(512 * block.expansion)
-        self.pool1 = nn.AvgPool2d(14, stride=1)
-        self.pool2 = nn.AvgPool2d(7, stride=1)
-        self.fc = nn.Linear(768 * block.expansion, num_classes)
+        self.attention2 = AttnPool(512 * block.expansion, 7)
+        self.fc = nn.Linear(512 * block.expansion, num_classes)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -203,25 +204,16 @@ class ResNet(nn.Module):
         x = self.layer1(x)
         x = self.layer2(x)
         x = self.layer3(x)
-        x_att1 = self.attention1(x)
+        #x_att1 = self.attention1(x)
         x = self.layer4(x)
-        x_att2 = self.attention2(x)
-        #x = self.attention2(x)
-        '''
-        batch_size = x.size(0)
-        x = x.resize(x.size(0), x.size(1), x.size(2)*x.size(3))
-        norm = x.norm(2, 1)
-        _, index = norm.max(1)
-        index = index.detach()
-        x = x.chunk(batch_size, 0)
-        index = index.chunk(batch_size, 0)
-        x = torch.cat([x[i].index_select(2, index[i]) for i in range(batch_size)])
-        '''
-        x_att1 = self.pool1(x_att1)
-        x_att1 = x_att1.view(x_att1.size(0), -1)
-        x_att2 = self.pool2(x_att2)
-        x_att2 = x_att2.view(x_att2.size(0), -1)
-        x = torch.cat((x_att1, x_att2), 1)
+        #x_att2 = self.attention2(x)
+        x = self.attention2(x)
+
+        #x_att1 = self.pool1(x_att1)
+        #x_att1 = x_att1.view(x_att1.size(0), -1)
+        #x_att2 = self.pool2(x_att2)
+        #x_att2 = x_att2.view(x_att2.size(0), -1)
+        #x = torch.cat((x_att1, x_att2), 1)
         x = self.fc(x)
 
         return x
