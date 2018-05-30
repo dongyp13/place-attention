@@ -165,11 +165,12 @@ class AttnPool(nn.Module):
         super(AttnPool, self).__init__()
         self.planes = planes
         #self.att1 = Attention(planes, planes / 8)
-        self.att1 = BilinearAttention(planes, planes / 8)
-        self.pool = nn.AvgPool2d(kernel_size, stride=1)
+        #self.att1 = BilinearAttention(planes, planes / 8)
+        #self.pool = nn.AvgPool2d(kernel_size, stride=1)
+        
         #self.fc = nn.Linear(planes, planes)
-        #self.att = nn.Linear(planes, 1, bias=False)
-        #nn.init.constant(self.att.weight, 0)
+        self.trans = nn.Linear(planes, 1, bias=False)
+        nn.init.constant(self.trans.weight, 0)
         #self.relu = nn.ReLU(inplace=True)
 
     def forward(self, x):
@@ -177,16 +178,16 @@ class AttnPool(nn.Module):
         #avg_x = avg_x.view(avg_x.size(0), -1)
         #avg_x = self.fc(avg_x)
         #avg_x = self.relu(avg_x)
-        #permute_x = x.resize(x.size(0), x.size(1), x.size(2)*x.size(3)).permute(0,2,1)
-        #attn_weight = nn.functional.softmax(
-        #    self.att(permute_x + avg_x.unsqueeze(1)).squeeze(),
-        #    dim=1)
-        #x = torch.matmul(attn_weight.unsqueeze(1), permute_x).squeeze()
-        #return x
-        x = self.att1(x)
-        x = self.pool(x)
-        x = x.view(x.size(0), -1)
+        permute_x = x.resize(x.size(0), x.size(1), x.size(2)*x.size(3)).permute(0,2,1)
+        attn_weight = nn.functional.softmax(
+            self.trans(permute_x).squeeze(),
+            dim=1)
+        x = torch.matmul(attn_weight.unsqueeze(1), permute_x).squeeze()
         return x
+        #x = self.att1(x)
+        #x = self.pool(x)
+        #x = x.view(x.size(0), -1)
+        #return x
 
 class ResNet(nn.Module):
 
