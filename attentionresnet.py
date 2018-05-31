@@ -164,8 +164,8 @@ class AttnPool(nn.Module):
     def __init__(self, planes, kernel_size):
         super(AttnPool, self).__init__()
         self.planes = planes
-        self.att1 = Attention(planes, planes / 8)
-        #self.att1 = BilinearAttention(planes, planes / 8)
+        #self.att1 = Attention(planes, planes / 8)
+        self.att1 = BilinearAttention(planes, planes / 8)
         #self.pool = nn.AvgPool2d(kernel_size, stride=1)
         
         #self.fc = nn.Linear(planes, planes)
