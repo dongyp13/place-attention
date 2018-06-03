@@ -164,23 +164,23 @@ class AttnPool(nn.Module):
     def __init__(self, planes, kernel_size):
         super(AttnPool, self).__init__()
         self.planes = planes
-        #self.att1 = Attention(planes, planes / 8)
+        self.att1 = Attention(planes, planes / 8)
         #self.att1 = BilinearAttention(planes, planes / 8)
 
-        self.conv = nn.Conv2d(planes, planes, kernel_size=1, bias=False)
-        self.bn = nn.BatchNorm2d(planes)
-        self.relu = nn.ReLU(inplace=True)
+        #self.conv = nn.Conv2d(planes, planes, kernel_size=1, bias=False)
+        #self.bn = nn.BatchNorm2d(planes)
+        #self.relu = nn.ReLU(inplace=True)
         self.pool = nn.MaxPool2d(kernel_size, stride=1)
         
         self.trans = nn.Linear(planes, 1, bias=False)
         nn.init.constant(self.trans.weight, 0)
 
     def forward(self, x):
-        #h = self.att1(x)
-        g = self.conv(x)
-        g = self.bn(g)
-        g = self.relu(g)
-        g = self.pool(g)
+        h = self.att1(x)
+        #g = self.conv(x)
+        #g = self.bn(g)
+        #g = self.relu(g)
+        g = self.pool(h)
         g = g.view(g.size(0), -1)
 
         permute_x = x.resize(x.size(0), x.size(1), x.size(2)*x.size(3)).permute(0,2,1)
