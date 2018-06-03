@@ -183,12 +183,12 @@ class AttnPool(nn.Module):
         g = self.pool(g)
         g = g.view(g.size(0), -1)
 
-        #permute_x = x.resize(x.size(0), x.size(1), x.size(2)*x.size(3)).permute(0,2,1)
+        permute_x = x.resize(x.size(0), x.size(1), x.size(2)*x.size(3)).permute(0,2,1)
         permute_h = h.resize(h.size(0), h.size(1), h.size(2)*h.size(3)).permute(0,2,1)
         attn_weight = nn.functional.softmax(
             self.trans(permute_h + g.unsqueeze(1)).squeeze(),
             dim=1)
-        out = torch.matmul(attn_weight.unsqueeze(1), permute_h).squeeze()
+        out = torch.matmul(attn_weight.unsqueeze(1), permute_x).squeeze()
         return out
         
 
