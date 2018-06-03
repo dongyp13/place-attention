@@ -165,28 +165,28 @@ class AttnPool(nn.Module):
         super(AttnPool, self).__init__()
         self.planes = planes
         #self.att1 = Attention(planes, planes / 8)
-        self.att1 = BilinearAttention(planes, planes / 8)
-        #self.pool = nn.AvgPool2d(kernel_size, stride=1)
+        #self.att1 = BilinearAttention(planes, planes / 8)
+
+        self.conv = nn.Conv2d(planes, planes, kernel_size=1, bias=False)
+        self.bn = nn.BatchNorm2d(planes)
+        self.relu = nn.ReLU(inplace=True)
+        self.pool = nn.MaxPool2d(kernel_size, stride=1)
         
-        #self.fc = nn.Linear(planes, planes)
         self.trans = nn.Linear(planes, 1, bias=False)
         nn.init.constant(self.trans.weight, 0)
-        #self.relu = nn.ReLU(inplace=True)
 
     def forward(self, x):
-        h = self.att1(x)
-        #x = self.pool(x)
-        #x = x.view(x.size(0), -1)
-        #return x
+        #h = self.att1(x)
+        g = self.conv(x)
+        g = self.bn(g)
+        g = self.relu(g)
+        g = self.pool(g)
+        g = g.view(g.size(0), -1)
 
-        #avg_x = self.pool(x)
-        #avg_x = avg_x.view(avg_x.size(0), -1)
-        #avg_x = self.fc(avg_x)
-        #avg_x = self.relu(avg_x)
         permute_x = x.resize(x.size(0), x.size(1), x.size(2)*x.size(3)).permute(0,2,1)
-        permute_h = h.resize(h.size(0), h.size(1), h.size(2)*h.size(3)).permute(0,2,1)
+        #permute_h = h.resize(h.size(0), h.size(1), h.size(2)*h.size(3)).permute(0,2,1)
         attn_weight = nn.functional.softmax(
-            self.trans(permute_h).squeeze(),
+            self.trans(permute_h + g.unsqueeze(1)).squeeze(),
             dim=1)
         out = torch.matmul(attn_weight.unsqueeze(1), permute_x).squeeze()
         return out
